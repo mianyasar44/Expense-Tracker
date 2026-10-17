@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily Expense Tracker</title>
+<style>
+  :root {
+    --bg:#f1f4fa; --card:#ffffff; --text:#1b2233; --muted:#6b7488;
+    --accent:#4f46e5; --accent-2:#7c3aed; --danger:#e5484d;
+    --border:#e4e8f1; --shadow:0 4px 18px rgba(30,40,90,.08);
+    --radius:16px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#0f1220; --card:#181c30; --text:#eceefb; --muted:#9aa2bd;
+      --accent:#8b83ff; --accent-2:#b18cff; --danger:#ff7b80;
+      --border:#262c47; --shadow:0 4px 18px rgba(0,0,0,.35);
+    }
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    line-height:1.4;
+  }
+  main { max-width:640px; margin:0 auto; padding:0 16px 40px; }
+
+  /* Header */
+  .hero {
+    margin:0 -16px 20px; padding:28px 24px 64px;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    color:#fff; border-radius:0 0 28px 28px;
+  }
+  .hero h1 { margin:0; font-size:1.5rem; letter-spacing:-.01em; }
+  .hero p { margin:4px 0 0; opacity:.85; font-size:.9rem; }
+
+  /* Cards */
+  .card {
+    background:var(--card); border:1px solid var(--border);
+    border-radius:var(--radius); padding:18px; margin-bottom:16px;
+    box-shadow:var(--shadow);
+  }
+  .card.pull { margin-top:-48px; }
+  .section-title {
+    font-size:.78rem; font-weight:600; text-transform:uppercase;
+    letter-spacing:.08em; color:var(--muted); margin:0 0 10px;
+  }
+
+  /* Form controls */
+  .row { display:flex; gap:10px; flex-wrap:wrap; }
+  .row + .row { margin-top:10px; }
+  input, select, button { font:inherit; border-radius:12px; }
+  input, select {
+    flex:1; min-width:130px; padding:12px 14px;
+    border:1.5px solid var(--border); background:var(--bg); color:var(--text);
+    transition:border-color .15s, box-shadow .15s;
+  }
+  input:focus, select:focus {
+    outline:none; border-color:var(--accent);
+    box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent);
+  }
+  button {
+    padding:12px 16px; border:none; cursor:pointer; font-weight:600;
+    color:#fff; background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    transition:transform .12s, box-shadow .12s, opacity .12s;
+  }
+  button:hover { transform:translateY(-1px); box-shadow:0 6px 16px rgba(79,70,229,.35); }
+  button:active { transform:translateY(0); }
+  button.ghost {
+    background:transparent; color:var(--accent);
+    border:1.5px solid var(--accent); box-shadow:none;
+  }
+  button.ghost.danger { color:var(--danger); border-color:var(--danger); }
+  button.ghost:hover { background:color-mix(in srgb, var(--accent) 10%, transparent); box-shadow:none; }
+  button.ghost.danger:hover { background:color-mix(in srgb, var(--danger) 10%, transparent); }
+
+  /* Day summary */
+  .head { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+  .muted { color:var(--muted); font-size:.9rem; }
+  .total { font-size:2.2rem; font-weight:800; letter-spacing:-.02em; }
+
+  /* Expense list */
+  ul { list-style:none; margin:12px 0 0; padding:0; }
+  li {
+    display:flex; align-items:center; gap:12px; padding:12px 6px;
+    border-bottom:1px solid var(--border); border-radius:10px;
+    animation:slideIn .25s ease both; transition:background .15s;
+  }
+  li:last-child { border-bottom:none; }
+  li:hover { background:color-mix(in srgb, var(--accent) 6%, transparent); }
+  .icon {
+    width:40px; height:40px; flex:none; display:grid; place-items:center;
+    border-radius:12px; font-size:1.2rem;
+    background:color-mix(in srgb, var(--accent) 14%, transparent);
+  }
+  .info { flex:1; min-width:0; }
+  .info b { display:block; }
+  .info .muted { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .amt { font-weight:700; white-space:nowrap; }
+  button.del {
+    background:transparent; color:var(--muted); padding:6px 10px;
+    box-shadow:none; font-weight:400;
+  }
+  button.del:hover { color:var(--danger); background:color-mix(in srgb, var(--danger) 12%, transparent); box-shadow:none; transform:none; }
+  #empty { text-align:center; padding:18px 0 6px; }
+
+  /* Chart */
+  .bar-row { display:flex; align-items:center; gap:10px; margin:8px 0; font-size:.85rem; }
+  .bar-row .label { width:40px; color:var(--muted); }
+  .track { flex:1; height:12px; background:var(--bg); border-radius:99px; overflow:hidden; }
+  .bar {
+    height:100%; min-width:3px; border-radius:99px;
+    background:linear-gradient(90deg,var(--accent),var(--accent-2));
+    transition:width .5s cubic-bezier(.2,.8,.2,1);
+  }
+  .bar-row.today .label { color:var(--accent); font-weight:700; }
+  .bar-row .val { width:96px; text-align:right; font-variant-numeric:tabular-nums; }
+  .month {
+    margin-top:12px; padding-top:12px; border-top:1px dashed var(--border);
+    display:flex; justify-content:space-between;
+  }
+
+  @keyframes slideIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+  @media (max-width:480px) { .bar-row .val { width:80px; font-size:.78rem; } }
+</style>
+</head>
+<body>
+<main>
+  <header class="hero">
+    <h1>💸 Daily Expense Tracker</h1>
+    <p>Know where your money goes, one day at a time.</p>
+  </header>
+
+  <form id="form" class="card pull">
+    <p class="section-title">New expense</p>
+    <div class="row">
+      <input id="amount" type="number" step="0.01" min="0" placeholder="Amount" required>
+      <select id="category">
+        <option>Food</option><option>Transport</option><option>Bills</option>
+        <option>Shopping</option><option>Health</option><option>Entertainment</option><option>Other</option>
+      </select>
+    </div>
+    <div class="row">
+      <input id="note" type="text" placeholder="Note (optional)">
+      <input id="date" type="date" required>
+    </div>
+    <div class="row">
+      <button type="submit" style="flex:1">+ Add expense</button>
+    </div>
+  </form>
+
+  <section class="card">
+    <div class="head">
+      <div>
+        <div class="muted" id="dayLabel"></div>
+        <div class="total" id="dayTotal"></div>
+      </div>
+      <input id="viewDate" type="date" style="flex:none">
+    </div>
+    <ul id="list"></ul>
+    <p class="muted" id="empty" hidden>No expenses for this day.</p>
+  </section>
+
+  <section class="card">
+    <p class="section-title">Last 7 days</p>
+    <div id="chart"></div>
+    <div class="month"><span class="muted">Month total</span><b id="monthTotal"></b></div>
+  </section>
+
+  <div class="row">
+    <button class="ghost" id="exportBtn" style="flex:1">Export CSV</button>
+    <button class="ghost danger" id="clearBtn" style="flex:1">Clear all</button>
+  </div>
+</main>
+
+<script>
+const CURRENCY = "PKR";           // change to your currency
+const KEY = "expenses-v1";
+const ICONS = { Food:"🍔", Transport:"🚌", Bills:"🧾", Shopping:"🛍️", Health:"💊", Entertainment:"🎬", Other:"📦" };
+
+const $ = id => document.getElementById(id);
+const fmt = n => `${CURRENCY} ${n.toLocaleString(undefined, {maximumFractionDigits: 2})}`;
+const todayStr = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
+
+function load() { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } }
+function save(data) { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch {} }
+
+let expenses = load();
+
+function render() {
+  const day = $("viewDate").value;
+  const items = expenses.filter(e => e.date === day);
+  const total = items.reduce((s, e) => s + e.amount, 0);
+
+  $("dayLabel").textContent = new Date(day + "T00:00").toLocaleDateString(undefined, { weekday:"long", month:"short", day:"numeric" });
+  $("dayTotal").textContent = fmt(total);
+  $("empty").hidden = items.length > 0;
+
+  $("list").innerHTML = "";
+  items.forEach(e => {
+    const li = document.createElement("li");
+    li.innerHTML = `<div class="icon"></div><div class="info"><b></b><div class="muted"></div></div><span class="amt"></span><button class="del" title="Delete">✕</button>`;
+    li.querySelector(".icon").textContent = ICONS[e.category] || "📦";
+    li.querySelector("b").textContent = e.category;
+    li.querySelector(".muted").textContent = e.note || "";
+    li.querySelector(".amt").textContent = fmt(e.amount);
+    li.querySelector(".del").onclick = () => { expenses = expenses.filter(x => x.id !== e.id); save(expenses); render(); };
+    $("list").append(li);
+  });
+
+  // last 7 days chart
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(day + "T00:00"); d.setDate(d.getDate() - i);
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    const key = d.toISOString().slice(0, 10);
+    days.push({ key, label: new Date(key + "T00:00").toLocaleDateString(undefined, { weekday:"short" }),
+      sum: expenses.filter(e => e.date === key).reduce((s, e) => s + e.amount, 0) });
+  }
+  const max = Math.max(...days.map(d => d.sum), 1);
+  $("chart").innerHTML = days.map(d =>
+    `<div class="bar-row${d.key === day ? " today" : ""}"><span class="label">${d.label}</span><div class="track"><div class="bar" style="width:${(d.sum / max) * 100}%"></div></div><span class="val">${fmt(d.sum)}</span></div>`
+  ).join("");
+
+  const month = day.slice(0, 7);
+  $("monthTotal").textContent = fmt(expenses.filter(e => e.date.startsWith(month)).reduce((s, e) => s + e.amount, 0));
+}
+
+$("form").addEventListener("submit", ev => {
+  ev.preventDefault();
+  const amount = parseFloat($("amount").value);
+  if (!(amount > 0)) return;
+  expenses.push({ id: Date.now() + Math.random(), amount, category: $("category").value, note: $("note").value.trim(), date: $("date").value });
+  save(expenses);
+  $("viewDate").value = $("date").value;
+  $("amount").value = ""; $("note").value = "";
+  render();
+});
+
+$("viewDate").addEventListener("change", render);
+
+$("exportBtn").onclick = () => {
+  const rows = [["Date", "Category", "Amount", "Note"], ...expenses.map(e => [e.date, e.category, e.amount, `"${(e.note || "").replace(/"/g, '""')}"`])];
+  const blob = new Blob([rows.map(r => r.join(",")).join("\n")], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "expenses.csv"; a.click();
+};
+
+$("clearBtn").onclick = () => {
+  if (confirm("Delete ALL expenses? This cannot be undone.")) { expenses = []; save(expenses); render(); }
+};
+
+$("date").value = $("viewDate").value = todayStr();
+render();
+</script>
+</body>
+</html>
